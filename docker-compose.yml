@@ -1,0 +1,104 @@
+services:
+  # Database Server
+  db:
+    image: mysql:8.0
+    container_name: mysql_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: my_database
+      MYSQL_USER: user
+      MYSQL_PASSWORD: userpassword
+    networks:
+      - backend
+
+  # phpMyAdmin Container
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: phpmyadmin_gui
+    restart: always
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: db
+      MYSQL_ROOT_PASSWORD: rootpassword
+    networks:
+      - backend
+
+  # Web Server (PHP + Apache)
+  web:
+    build: ./web-app
+    container_name: web_server
+    restart: always
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge
+
+# services:
+#   web:
+#     image: php:8.2-apache
+#     container_name: web
+#     restart: unless-stopped
+#     ports:
+#       - "8081:80"
+#     volumes:
+#       - ./web:/var/www/html
+#     environment:
+#       DB_HOST: db
+#       DB_NAME: appdb
+#       DB_USER: appuser
+#       DB_PASSWORD: apppass
+#     depends_on:
+#       db:
+#         condition: service_healthy
+#     networks:
+#       - app-net
+
+#   db:
+#     image: mariadb:11
+#     container_name: db
+#     restart: unless-stopped
+#     environment:
+#       MYSQL_ROOT_PASSWORD: rootpass
+#       MYSQL_DATABASE: appdb
+#       MYSQL_USER: appuser
+#       MYSQL_PASSWORD: apppass
+#     volumes:
+#       - db_data:/var/lib/mysql
+#     healthcheck:
+#       test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "-uroot", "-prootpass"]
+#       interval: 10s
+#       timeout: 5s
+#       retries: 8
+#     networks:
+#       - app-net
+
+#   phpmyadmin:
+#     image: phpmyadmin:5-apache
+#     container_name: phpmyadmin
+#     restart: unless-stopped
+#     ports:
+#       - "8082:80"
+#     environment:
+#       PMA_HOST: db
+#       PMA_PORT: 3306
+#       MYSQL_ROOT_PASSWORD: rootpass
+#     depends_on:
+#       db:
+#         condition: service_healthy
+#     networks:
+#       - app-net
+
+# volumes:
+#   db_data:
+
+# networks:
+#   app-net:
+#     driver: bridge
