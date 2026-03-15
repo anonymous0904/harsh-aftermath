@@ -12,6 +12,39 @@ services:
     networks:
       - backend
 
+  # master database 
+  mysql-master:
+    image: mysql:8.0
+    container_name: mysql_master
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: my_database
+      MYSQL_USER: replicator
+      MYSQL_PASSWORD: repl_password
+    command: 
+      - --server-id=1 
+      - --log-bin=mysql-bin 
+      - --binlog-format=ROW
+    networks:
+      - backend
+
+  # slave database
+  mysql-slave:
+    image: mysql:8.0
+    container_name: mysql_slave
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+    command: 
+      - --server-id=2 
+      - --log-bin=mysql-bin 
+      - --read-only=1
+    depends_on:
+      - mysql-master
+    networks:
+      - backend
+
   # phpMyAdmin Container
   phpmyadmin:
     image: phpmyadmin:latest
@@ -20,7 +53,7 @@ services:
     ports:
       - "8081:80"
     environment:
-      PMA_HOST: db
+      PMA_HOST: mysql-master
       MYSQL_ROOT_PASSWORD: rootpassword
     networks:
       - backend
@@ -31,7 +64,7 @@ services:
     # container_name: web_server
     restart: always
     depends_on:
-      - db
+      - mysql-master
     deploy:
       replicas: 2
     networks:
@@ -42,6 +75,7 @@ services:
     container_name: nginx_proxy
     ports:
       - "8080:80" 
+      # - "8443:443"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
